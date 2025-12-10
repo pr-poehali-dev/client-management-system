@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/icon';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+
+type Language = 'ru' | 'en' | 'zh';
+type Currency = 'RUB' | 'USD' | 'CNY';
 
 type Client = {
   id: string;
@@ -21,6 +24,17 @@ type Client = {
   serviceType: string;
   status: string;
   manager: string;
+};
+
+type Supplier = {
+  id: string;
+  name: string;
+  country: string;
+  category: string;
+  contact: string;
+  rating: number;
+  paymentTerms: string;
+  status: string;
 };
 
 type Product = {
@@ -37,6 +51,7 @@ type Product = {
 type Order = {
   id: string;
   clientName: string;
+  supplierName?: string;
   status: string;
   total: number;
   items: number;
@@ -45,15 +60,141 @@ type Order = {
   service: string;
 };
 
+const translations = {
+  ru: {
+    dashboard: 'Дашборд',
+    clients: 'Клиенты',
+    orders: 'Заказы',
+    products: 'Товары',
+    suppliers: 'Поставщики',
+    logistics: 'Логистика',
+    finance: 'Финансы',
+    analytics: 'Аналитика',
+    activeOrders: 'Активные заказы',
+    totalClients: 'Всего клиентов',
+    monthRevenue: 'Выручка (месяц)',
+    warehouseChina: 'На складе в КНР',
+    addClient: 'Добавить клиента',
+    addSupplier: 'Добавить поставщика',
+    createOrder: 'Создать заказ',
+    addProduct: 'Добавить товар',
+    overview: 'Обзор ключевых метрик и аналитики',
+    clientManagement: 'Управление базой клиентов',
+    supplierManagement: 'Управление поставщиками',
+    orderManagement: 'Управление заказами клиентов',
+    productCatalog: 'Номенклатура товаров',
+    logisticsManagement: 'Управление отправками и доставками',
+    financialAnalytics: 'Финансовая аналитика и платежи',
+    detailedAnalytics: 'Детальная аналитика и отчёты',
+  },
+  en: {
+    dashboard: 'Dashboard',
+    clients: 'Clients',
+    orders: 'Orders',
+    products: 'Products',
+    suppliers: 'Suppliers',
+    logistics: 'Logistics',
+    finance: 'Finance',
+    analytics: 'Analytics',
+    activeOrders: 'Active Orders',
+    totalClients: 'Total Clients',
+    monthRevenue: 'Revenue (Month)',
+    warehouseChina: 'China Warehouse',
+    addClient: 'Add Client',
+    addSupplier: 'Add Supplier',
+    createOrder: 'Create Order',
+    addProduct: 'Add Product',
+    overview: 'Overview of key metrics and analytics',
+    clientManagement: 'Client database management',
+    supplierManagement: 'Supplier management',
+    orderManagement: 'Client order management',
+    productCatalog: 'Product nomenclature',
+    logisticsManagement: 'Shipping and delivery management',
+    financialAnalytics: 'Financial analytics and payments',
+    detailedAnalytics: 'Detailed analytics and reports',
+  },
+  zh: {
+    dashboard: '仪表板',
+    clients: '客户',
+    orders: '订单',
+    products: '产品',
+    suppliers: '供应商',
+    logistics: '物流',
+    finance: '财务',
+    analytics: '分析',
+    activeOrders: '活跃订单',
+    totalClients: '客户总数',
+    monthRevenue: '月收入',
+    warehouseChina: '中国仓库',
+    addClient: '添加客户',
+    addSupplier: '添加供应商',
+    createOrder: '创建订单',
+    addProduct: '添加产品',
+    overview: '关键指标和分析概览',
+    clientManagement: '客户数据库管理',
+    supplierManagement: '供应商管理',
+    orderManagement: '客户订单管理',
+    productCatalog: '产品目录',
+    logisticsManagement: '运输和交付管理',
+    financialAnalytics: '财务分析和付款',
+    detailedAnalytics: '详细分析和报告',
+  },
+};
+
+const currencySymbols = {
+  RUB: '₽',
+  USD: '$',
+  CNY: '¥',
+};
+
+const exchangeRates = {
+  RUB: 1,
+  USD: 0.011,
+  CNY: 0.078,
+};
+
 export default function Index() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
+  const [isSupplierDialogOpen, setIsSupplierDialogOpen] = useState(false);
   const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false);
+  const [language, setLanguage] = useState<Language>('ru');
+  const [currency, setCurrency] = useState<Currency>('RUB');
+
+  useEffect(() => {
+    const savedLang = localStorage.getItem('language') as Language;
+    const savedCurrency = localStorage.getItem('currency') as Currency;
+    if (savedLang) setLanguage(savedLang);
+    if (savedCurrency) setCurrency(savedCurrency);
+  }, []);
+
+  const handleLanguageChange = (lang: Language) => {
+    setLanguage(lang);
+    localStorage.setItem('language', lang);
+  };
+
+  const handleCurrencyChange = (curr: Currency) => {
+    setCurrency(curr);
+    localStorage.setItem('currency', curr);
+  };
+
+  const formatPrice = (price: number) => {
+    const converted = price * exchangeRates[currency];
+    return `${currencySymbols[currency]}${converted.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  };
+
+  const t = translations[language];
 
   const clients: Client[] = [
     { id: '1', name: 'Анна Смирнова', city: 'Москва', theme: 'Электроника', type: 'ФЛ', commission: 15, serviceType: 'Закуп + Логистика', status: 'Активный', manager: 'Иванов И.' },
     { id: '2', name: 'ООО "ТехноПром"', city: 'Санкт-Петербург', theme: 'Оборудование', type: 'ЮЛ', company: 'ТехноПром', commission: 12, serviceType: 'Логистика', status: 'Активный', manager: 'Петров П.' },
     { id: '3', name: 'Дмитрий Козлов', city: 'Казань', theme: 'Текстиль', type: 'ФЛ', commission: 18, serviceType: 'Закуп', status: 'Активный', manager: 'Сидорова С.' },
+  ];
+
+  const suppliers: Supplier[] = [
+    { id: '1', name: 'Shenzhen Electronics Ltd', country: 'Китай', category: 'Электроника', contact: 'contact@shenzhen-elec.cn', rating: 4.8, paymentTerms: '30% аванс, 70% по готовности', status: 'Активный' },
+    { id: '2', name: 'Guangzhou Textile Co', country: 'Китай', category: 'Текстиль', contact: 'info@gz-textile.com', rating: 4.5, paymentTerms: '50/50', status: 'Активный' },
+    { id: '3', name: 'Beijing Tech Industries', country: 'Китай', category: 'Оборудование', contact: 'sales@beijing-tech.cn', rating: 4.9, paymentTerms: 'Предоплата 100%', status: 'Активный' },
   ];
 
   const products: Product[] = [
@@ -63,10 +204,10 @@ export default function Index() {
   ];
 
   const orders: Order[] = [
-    { id: 'ORD-2024-001', clientName: 'Анна Смирнова', status: 'На складе в Китае', total: 45000, items: 8, date: '2024-12-05', shipping: 'Авто', service: 'Закуп + Логистика' },
-    { id: 'ORD-2024-002', clientName: 'ООО "ТехноПром"', status: 'В процессе', total: 128000, items: 15, date: '2024-12-07', shipping: 'ЖД', service: 'Логистика' },
-    { id: 'ORD-2024-003', clientName: 'Дмитрий Козлов', status: 'Ожидает депозита', total: 32000, items: 5, date: '2024-12-08', shipping: 'Море', service: 'Закуп' },
-    { id: 'ORD-2024-004', clientName: 'Анна Смирнова', status: 'Готов к отправке', total: 67000, items: 12, date: '2024-12-04', shipping: 'Авто', service: 'Закуп + Логистика' },
+    { id: 'ORD-2024-001', clientName: 'Анна Смирнова', supplierName: 'Shenzhen Electronics Ltd', status: 'На складе в Китае', total: 45000, items: 8, date: '2024-12-05', shipping: 'Авто', service: 'Закуп + Логистика' },
+    { id: 'ORD-2024-002', clientName: 'ООО "ТехноПром"', supplierName: 'Beijing Tech Industries', status: 'В процессе', total: 128000, items: 15, date: '2024-12-07', shipping: 'ЖД', service: 'Логистика' },
+    { id: 'ORD-2024-003', clientName: 'Дмитрий Козлов', supplierName: 'Guangzhou Textile Co', status: 'Ожидает депозита', total: 32000, items: 5, date: '2024-12-08', shipping: 'Море', service: 'Закуп' },
+    { id: 'ORD-2024-004', clientName: 'Анна Смирнова', supplierName: 'Shenzhen Electronics Ltd', status: 'Готов к отправке', total: 67000, items: 12, date: '2024-12-04', shipping: 'Авто', service: 'Закуп + Логистика' },
   ];
 
   const monthlyData = [
@@ -113,13 +254,14 @@ export default function Index() {
 
           <nav className="space-y-2">
             {[
-              { id: 'dashboard', icon: 'LayoutDashboard', label: 'Дашборд' },
-              { id: 'clients', icon: 'Users', label: 'Клиенты' },
-              { id: 'orders', icon: 'ShoppingCart', label: 'Заказы' },
-              { id: 'products', icon: 'Box', label: 'Товары' },
-              { id: 'logistics', icon: 'Truck', label: 'Логистика' },
-              { id: 'finance', icon: 'DollarSign', label: 'Финансы' },
-              { id: 'analytics', icon: 'BarChart3', label: 'Аналитика' },
+              { id: 'dashboard', icon: 'LayoutDashboard', label: t.dashboard },
+              { id: 'clients', icon: 'Users', label: t.clients },
+              { id: 'suppliers', icon: 'Building2', label: t.suppliers },
+              { id: 'orders', icon: 'ShoppingCart', label: t.orders },
+              { id: 'products', icon: 'Box', label: t.products },
+              { id: 'logistics', icon: 'Truck', label: t.logistics },
+              { id: 'finance', icon: 'DollarSign', label: t.finance },
+              { id: 'analytics', icon: 'BarChart3', label: t.analytics },
             ].map((item) => (
               <button
                 key={item.id}
@@ -136,19 +278,43 @@ export default function Index() {
         </aside>
 
         <main className="flex-1 p-8">
+          <div className="flex justify-end gap-3 mb-6 animate-fade-in">
+            <Select value={language} onValueChange={(value) => handleLanguageChange(value as Language)}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ru">🇷🇺 Русский</SelectItem>
+                <SelectItem value="en">🇬🇧 English</SelectItem>
+                <SelectItem value="zh">🇨🇳 中文</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={currency} onValueChange={(value) => handleCurrencyChange(value as Currency)}>
+              <SelectTrigger className="w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="RUB">₽ RUB</SelectItem>
+                <SelectItem value="USD">$ USD</SelectItem>
+                <SelectItem value="CNY">¥ CNY</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {activeTab === 'dashboard' && (
             <div className="animate-fade-in">
               <div className="mb-6">
-                <h2 className="text-3xl font-bold text-[#1A1F2C]">Дашборд</h2>
-                <p className="text-gray-600">Обзор ключевых метрик и аналитики</p>
+                <h2 className="text-3xl font-bold text-[#1A1F2C]">{t.dashboard}</h2>
+                <p className="text-gray-600">{t.overview}</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 {[
-                  { title: 'Активные заказы', value: '16', icon: 'ShoppingCart', color: 'text-blue-600', bg: 'bg-blue-50' },
-                  { title: 'Всего клиентов', value: '48', icon: 'Users', color: 'text-purple-600', bg: 'bg-purple-50' },
-                  { title: 'Выручка (месяц)', value: '₽540K', icon: 'TrendingUp', color: 'text-green-600', bg: 'bg-green-50' },
-                  { title: 'На складе в КНР', value: '23', icon: 'Package', color: 'text-orange-600', bg: 'bg-orange-50' },
+                  { title: t.activeOrders, value: '16', icon: 'ShoppingCart', color: 'text-blue-600', bg: 'bg-blue-50' },
+                  { title: t.totalClients, value: '48', icon: 'Users', color: 'text-purple-600', bg: 'bg-purple-50' },
+                  { title: t.monthRevenue, value: formatPrice(540000), icon: 'TrendingUp', color: 'text-green-600', bg: 'bg-green-50' },
+                  { title: t.warehouseChina, value: '23', icon: 'Package', color: 'text-orange-600', bg: 'bg-orange-50' },
                 ].map((stat, idx) => (
                   <Card key={idx} className="hover-scale">
                     <CardContent className="pt-6">
@@ -236,7 +402,7 @@ export default function Index() {
                         </div>
                         <div className="flex items-center gap-4">
                           <Badge className={`${getStatusColor(order.status)} text-white`}>{order.status}</Badge>
-                          <p className="font-bold text-[#1A1F2C]">₽{order.total.toLocaleString()}</p>
+                          <p className="font-bold text-[#1A1F2C]">{formatPrice(order.total)}</p>
                         </div>
                       </div>
                     ))}
@@ -250,14 +416,14 @@ export default function Index() {
             <div className="animate-fade-in">
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h2 className="text-3xl font-bold text-[#1A1F2C]">Клиенты</h2>
-                  <p className="text-gray-600">Управление базой клиентов</p>
+                  <h2 className="text-3xl font-bold text-[#1A1F2C]">{t.clients}</h2>
+                  <p className="text-gray-600">{t.clientManagement}</p>
                 </div>
                 <Dialog open={isClientDialogOpen} onOpenChange={setIsClientDialogOpen}>
                   <DialogTrigger asChild>
                     <Button className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90">
                       <Icon name="Plus" size={20} className="mr-2" />
-                      Добавить клиента
+                      {t.addClient}
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-2xl">
@@ -381,18 +547,142 @@ export default function Index() {
             </div>
           )}
 
+          {activeTab === 'suppliers' && (
+            <div className="animate-fade-in">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-3xl font-bold text-[#1A1F2C]">{t.suppliers}</h2>
+                  <p className="text-gray-600">{t.supplierManagement}</p>
+                </div>
+                <Dialog open={isSupplierDialogOpen} onOpenChange={setIsSupplierDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90">
+                      <Icon name="Plus" size={20} className="mr-2" />
+                      {t.addSupplier}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Новый поставщик</DialogTitle>
+                      <DialogDescription>Заполните информацию о поставщике</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <Label>Название компании</Label>
+                        <Input placeholder="Shenzhen Electronics Ltd" />
+                      </div>
+                      <div>
+                        <Label>Страна</Label>
+                        <Input placeholder="Китай" />
+                      </div>
+                      <div>
+                        <Label>Категория</Label>
+                        <Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Выберите категорию" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="electronics">Электроника</SelectItem>
+                            <SelectItem value="textile">Текстиль</SelectItem>
+                            <SelectItem value="equipment">Оборудование</SelectItem>
+                            <SelectItem value="household">Товары для дома</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Контактные данные</Label>
+                        <Input placeholder="email@company.com" />
+                      </div>
+                      <div>
+                        <Label>Рейтинг (1-5)</Label>
+                        <Input type="number" min="1" max="5" step="0.1" placeholder="4.5" />
+                      </div>
+                      <div>
+                        <Label>Условия оплаты</Label>
+                        <Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Выберите условия" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="prepay">Предоплата 100%</SelectItem>
+                            <SelectItem value="5050">50/50</SelectItem>
+                            <SelectItem value="3070">30% аванс, 70% по готовности</SelectItem>
+                            <SelectItem value="custom">Индивидуальные</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="col-span-2">
+                        <Label>Комментарий</Label>
+                        <Input placeholder="Дополнительная информация" />
+                      </div>
+                    </div>
+                    <Button className="w-full mt-4 bg-[#0EA5E9]">Создать поставщика</Button>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                {suppliers.map((supplier) => (
+                  <Card key={supplier.id} className="hover-scale">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-gradient-to-br from-[#0EA5E9] to-[#8B5CF6] text-white p-3 rounded-full">
+                            <Icon name="Building2" size={24} />
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">{supplier.name}</CardTitle>
+                            <CardDescription>{supplier.country}</CardDescription>
+                          </div>
+                        </div>
+                        <Badge className={`${getStatusColor(supplier.status)} text-white`}>{supplier.status}</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Категория:</span>
+                          <span className="font-medium">{supplier.category}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Рейтинг:</span>
+                          <span className="font-medium flex items-center gap-1">
+                            ⭐ {supplier.rating}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Контакт:</span>
+                          <span className="font-medium text-xs">{supplier.contact}</span>
+                        </div>
+                        <Separator />
+                        <div className="text-sm">
+                          <span className="text-gray-600">Условия оплаты:</span>
+                          <p className="font-medium mt-1">{supplier.paymentTerms}</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" className="w-full mt-4">
+                        <Icon name="Eye" size={16} className="mr-2" />
+                        Подробнее
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
           {activeTab === 'orders' && (
             <div className="animate-fade-in">
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h2 className="text-3xl font-bold text-[#1A1F2C]">Заказы</h2>
-                  <p className="text-gray-600">Управление заказами клиентов</p>
+                  <h2 className="text-3xl font-bold text-[#1A1F2C]">{t.orders}</h2>
+                  <p className="text-gray-600">{t.orderManagement}</p>
                 </div>
                 <Dialog open={isOrderDialogOpen} onOpenChange={setIsOrderDialogOpen}>
                   <DialogTrigger asChild>
                     <Button className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90">
                       <Icon name="Plus" size={20} className="mr-2" />
-                      Создать заказ
+                      {t.createOrder}
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-3xl">
@@ -417,6 +707,21 @@ export default function Index() {
                         </Select>
                       </div>
                       <div>
+                        <Label>Поставщик</Label>
+                        <Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Выберите поставщика" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {suppliers.map((supplier) => (
+                              <SelectItem key={supplier.id} value={supplier.id}>
+                                {supplier.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
                         <Label>Тип услуги</Label>
                         <Select>
                           <SelectTrigger>
@@ -428,10 +733,6 @@ export default function Index() {
                             <SelectItem value="both">Оба</SelectItem>
                           </SelectContent>
                         </Select>
-                      </div>
-                      <div>
-                        <Label>Поставщик</Label>
-                        <Input placeholder="Название поставщика" />
                       </div>
                       <div>
                         <Label>Способ отправки</Label>
@@ -469,6 +770,7 @@ export default function Index() {
                         <tr>
                           <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Номер заказа</th>
                           <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Клиент</th>
+                          <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Поставщик</th>
                           <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Статус</th>
                           <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Товаров</th>
                           <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Сумма</th>
@@ -482,11 +784,12 @@ export default function Index() {
                           <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                             <td className="px-6 py-4 font-medium text-[#1A1F2C]">{order.id}</td>
                             <td className="px-6 py-4 text-gray-700">{order.clientName}</td>
+                            <td className="px-6 py-4 text-gray-700">{order.supplierName}</td>
                             <td className="px-6 py-4">
                               <Badge className={`${getStatusColor(order.status)} text-white`}>{order.status}</Badge>
                             </td>
                             <td className="px-6 py-4 text-gray-700">{order.items} шт</td>
-                            <td className="px-6 py-4 font-semibold text-[#1A1F2C]">₽{order.total.toLocaleString()}</td>
+                            <td className="px-6 py-4 font-semibold text-[#1A1F2C]">{formatPrice(order.total)}</td>
                             <td className="px-6 py-4">
                               <Badge variant="outline">{order.shipping}</Badge>
                             </td>
@@ -510,12 +813,12 @@ export default function Index() {
             <div className="animate-fade-in">
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h2 className="text-3xl font-bold text-[#1A1F2C]">Товары</h2>
-                  <p className="text-gray-600">Номенклатура товаров</p>
+                  <h2 className="text-3xl font-bold text-[#1A1F2C]">{t.products}</h2>
+                  <p className="text-gray-600">{t.productCatalog}</p>
                 </div>
                 <Button className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90">
                   <Icon name="Plus" size={20} className="mr-2" />
-                  Добавить товар
+                  {t.addProduct}
                 </Button>
               </div>
 
@@ -530,7 +833,7 @@ export default function Index() {
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span className="text-gray-600">Цена:</span>
-                          <span className="font-semibold">₽{product.price}</span>
+                          <span className="font-semibold">{formatPrice(product.price)}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Ед. изм.:</span>
@@ -559,8 +862,8 @@ export default function Index() {
           {activeTab === 'logistics' && (
             <div className="animate-fade-in">
               <div className="mb-6">
-                <h2 className="text-3xl font-bold text-[#1A1F2C]">Логистика</h2>
-                <p className="text-gray-600">Управление отправками и доставками</p>
+                <h2 className="text-3xl font-bold text-[#1A1F2C]">{t.logistics}</h2>
+                <p className="text-gray-600">{t.logisticsManagement}</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -602,7 +905,7 @@ export default function Index() {
                             </div>
                             <div>
                               <p className="font-semibold text-[#1A1F2C]">{order.id}</p>
-                              <p className="text-sm text-gray-600">{order.clientName}</p>
+                              <p className="text-sm text-gray-600">{order.clientName} • {order.supplierName}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
@@ -627,16 +930,16 @@ export default function Index() {
           {activeTab === 'finance' && (
             <div className="animate-fade-in">
               <div className="mb-6">
-                <h2 className="text-3xl font-bold text-[#1A1F2C]">Финансы</h2>
-                <p className="text-gray-600">Финансовая аналитика и платежи</p>
+                <h2 className="text-3xl font-bold text-[#1A1F2C]">{t.finance}</h2>
+                <p className="text-gray-600">{t.financialAnalytics}</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 {[
-                  { title: 'Общая выручка', value: '₽3.89M', icon: 'TrendingUp', color: 'bg-green-500' },
-                  { title: 'Ожидается оплат', value: '₽542K', icon: 'Clock', color: 'bg-yellow-500' },
-                  { title: 'Оплачено (месяц)', value: '₽540K', icon: 'CheckCircle', color: 'bg-blue-500' },
-                  { title: 'Задолженности', value: '₽87K', icon: 'AlertCircle', color: 'bg-red-500' },
+                  { title: 'Общая выручка', value: formatPrice(3890000), icon: 'TrendingUp', color: 'bg-green-500' },
+                  { title: 'Ожидается оплат', value: formatPrice(542000), icon: 'Clock', color: 'bg-yellow-500' },
+                  { title: 'Оплачено (месяц)', value: formatPrice(540000), icon: 'CheckCircle', color: 'bg-blue-500' },
+                  { title: 'Задолженности', value: formatPrice(87000), icon: 'AlertCircle', color: 'bg-red-500' },
                 ].map((stat, idx) => (
                   <Card key={idx} className="hover-scale">
                     <CardContent className="pt-6">
@@ -693,7 +996,7 @@ export default function Index() {
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
-                          <p className="font-bold text-[#1A1F2C]">₽{payment.amount.toLocaleString()}</p>
+                          <p className="font-bold text-[#1A1F2C]">{formatPrice(payment.amount)}</p>
                           <Badge className={payment.status === 'Получено' ? 'bg-green-500 text-white' : 'bg-yellow-500 text-white'}>
                             {payment.status}
                           </Badge>
@@ -709,8 +1012,8 @@ export default function Index() {
           {activeTab === 'analytics' && (
             <div className="animate-fade-in">
               <div className="mb-6">
-                <h2 className="text-3xl font-bold text-[#1A1F2C]">Аналитика</h2>
-                <p className="text-gray-600">Детальная аналитика и отчёты</p>
+                <h2 className="text-3xl font-bold text-[#1A1F2C]">{t.analytics}</h2>
+                <p className="text-gray-600">{t.detailedAnalytics}</p>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -736,7 +1039,7 @@ export default function Index() {
                               <p className="text-sm text-gray-600">{client.orders} заказов</p>
                             </div>
                           </div>
-                          <p className="font-bold text-[#1A1F2C]">₽{client.revenue.toLocaleString()}</p>
+                          <p className="font-bold text-[#1A1F2C]">{formatPrice(client.revenue)}</p>
                         </div>
                       ))}
                     </div>
@@ -800,7 +1103,7 @@ export default function Index() {
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-600">Выручка:</span>
-                              <span className="font-semibold">₽{manager.revenue.toLocaleString()}</span>
+                              <span className="font-semibold">{formatPrice(manager.revenue)}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-600">Клиентов:</span>

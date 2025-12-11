@@ -158,6 +158,8 @@ export default function Index() {
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   const [isSupplierDialogOpen, setIsSupplierDialogOpen] = useState(false);
   const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false);
+  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [language, setLanguage] = useState<Language>('ru');
   const [currency, setCurrency] = useState<Currency>('RUB');
 
@@ -822,40 +824,109 @@ export default function Index() {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map((product) => (
-                  <Card key={product.id} className="hover-scale">
-                    <CardContent className="pt-6">
-                      <div className="text-6xl mb-4 text-center">{product.image}</div>
-                      <h3 className="text-lg font-semibold text-[#1A1F2C] mb-2">{product.name}</h3>
-                      <p className="text-sm text-gray-600 mb-4">Артикул: {product.sku}</p>
-                      <Separator className="mb-4" />
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Цена:</span>
-                          <span className="font-semibold">{formatPrice(product.price)}</span>
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Артикул</th>
+                          <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Название</th>
+                          <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Цена</th>
+                          <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Ед. изм.</th>
+                          <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Вес (кг)</th>
+                          <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Материал</th>
+                          <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Действия</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {products.map((product) => (
+                          <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4 font-medium text-[#1A1F2C]">{product.sku}</td>
+                            <td className="px-6 py-4 text-gray-700">{product.name}</td>
+                            <td className="px-6 py-4 font-semibold text-[#1A1F2C]">{formatPrice(product.price)}</td>
+                            <td className="px-6 py-4 text-gray-700">{product.unit}</td>
+                            <td className="px-6 py-4 text-gray-700">{product.weight}</td>
+                            <td className="px-6 py-4 text-gray-600 text-sm">{product.material}</td>
+                            <td className="px-6 py-4">
+                              <div className="flex gap-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedProduct(product);
+                                    setIsProductDialogOpen(true);
+                                  }}
+                                >
+                                  <Icon name="Eye" size={16} />
+                                </Button>
+                                <Button variant="ghost" size="sm">
+                                  <Icon name="Edit" size={16} />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
+                <DialogContent className="max-w-2xl">
+                  {selectedProduct && (
+                    <>
+                      <DialogHeader>
+                        <DialogTitle>Детали товара</DialogTitle>
+                        <DialogDescription>Полная информация о товаре</DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-6 mt-4">
+                        <div className="flex justify-center">
+                          <div className="text-9xl">{selectedProduct.image}</div>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Ед. изм.:</span>
-                          <span className="font-medium">{product.unit}</span>
+                        <Separator />
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-gray-600">Название</Label>
+                            <p className="text-lg font-semibold text-[#1A1F2C] mt-1">{selectedProduct.name}</p>
+                          </div>
+                          <div>
+                            <Label className="text-gray-600">Артикул</Label>
+                            <p className="text-lg font-semibold text-[#1A1F2C] mt-1">{selectedProduct.sku}</p>
+                          </div>
+                          <div>
+                            <Label className="text-gray-600">Цена</Label>
+                            <p className="text-lg font-semibold text-[#0EA5E9] mt-1">{formatPrice(selectedProduct.price)}</p>
+                          </div>
+                          <div>
+                            <Label className="text-gray-600">Единица измерения</Label>
+                            <p className="text-lg font-semibold text-[#1A1F2C] mt-1">{selectedProduct.unit}</p>
+                          </div>
+                          <div>
+                            <Label className="text-gray-600">Вес</Label>
+                            <p className="text-lg font-semibold text-[#1A1F2C] mt-1">{selectedProduct.weight} кг</p>
+                          </div>
+                          <div>
+                            <Label className="text-gray-600">Материал</Label>
+                            <p className="text-lg font-semibold text-[#1A1F2C] mt-1">{selectedProduct.material}</p>
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Вес:</span>
-                          <span className="font-medium">{product.weight} кг</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Материал:</span>
-                          <span className="font-medium">{product.material}</span>
+                        <div className="flex gap-3 pt-4">
+                          <Button className="flex-1 bg-[#0EA5E9]">
+                            <Icon name="Edit" size={16} className="mr-2" />
+                            Редактировать
+                          </Button>
+                          <Button variant="outline" className="flex-1">
+                            <Icon name="Trash2" size={16} className="mr-2" />
+                            Удалить
+                          </Button>
                         </div>
                       </div>
-                      <Button variant="outline" className="w-full mt-4">
-                        <Icon name="Edit" size={16} className="mr-2" />
-                        Редактировать
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                    </>
+                  )}
+                </DialogContent>
+              </Dialog>
             </div>
           )}
 
